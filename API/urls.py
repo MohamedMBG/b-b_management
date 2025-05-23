@@ -1,5 +1,5 @@
 # API/urls.py
-from django.conf.urls import url
+from django.urls import re_path
 from django.urls import include, path
 from rest_framework import routers
 from . import views
@@ -16,6 +16,6 @@ urlpatterns = [
     path('', include(router.urls)),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     #path('clients/<int:pk>/', views.ClientDetail.as_view())
-    url(r'^prod/count/$', views.CountViewSet.as_view(), name='produits-count'),
-    url(r'^risk/$', views.RiskViewSet.as_view(), name='risk'),
+    re_path(r'^prod/count/$', views.CountViewSet.as_view(), name='produits-count'),
+    re_path(r'^risk/$', views.RiskViewSet.as_view(), name='risk'),
     ]
