@@ -1,0 +1,287 @@
+/* 
+ * Custom Admin CSS for B&B Management
+ * Green-themed UI based on reference design
+ */
+
+:root {
+    --primary-green: #198754; /* Bootstrap Success Green */
+    --dark-green: #0a3622;
+    --light-green: #d1e7dd;
+    --medium-green: #157347;
+    --sidebar-bg: var(--dark-green);
+    --sidebar-link-color: #adb5bd;
+    --sidebar-link-hover-color: #ffffff;
+    --sidebar-link-active-color: #ffffff;
+    --sidebar-link-active-bg: var(--primary-green);
+    --topbar-bg: #ffffff;
+    --topbar-border-color: #dee2e6;
+    --main-content-bg: #f8f9fa;
+    --card-border-color: #dee2e6;
+    --card-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+/* Base Layout */
+body {
+    background-color: var(--main-content-bg);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.wrapper {
+    display: flex;
+    width: 100%;
+    min-height: 100vh;
+    align-items: stretch;
+}
+
+/* Sidebar Styling */
+#sidebar {
+    min-width: 250px;
+    max-width: 250px;
+    background: var(--sidebar-bg);
+    color: var(--sidebar-link-color);
+    transition: all 0.3s;
+}
+
+#sidebar.collapsed {
+    margin-left: -250px;
+}
+
+#sidebar .sidebar-header {
+    padding: 20px;
+    background: var(--sidebar-bg);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+}
+
+#sidebar .sidebar-header a {
+    color: #fff;
+    text-decoration: none;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+#sidebar ul.components {
+    padding: 20px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#sidebar ul p {
+    color: #fff;
+    padding: 10px;
+    margin-bottom: 0;
+    font-size: 0.85rem;
+    letter-spacing: 0.05rem;
+}
+
+#sidebar ul li a {
+    padding: 10px 20px;
+    font-size: 1.1em;
+    display: block;
+    color: var(--sidebar-link-color);
+    text-decoration: none;
+    transition: all 0.3s;
+    border-left: 3px solid transparent;
+}
+
+#sidebar ul li a:hover {
+    color: var(--sidebar-link-hover-color);
+    background: rgba(255, 255, 255, 0.1);
+    border-left: 3px solid var(--primary-green);
+}
+
+#sidebar ul li.active > a,
+a[aria-expanded="true"] {
+    color: var(--sidebar-link-active-color);
+    background: var(--sidebar-link-active-bg);
+    border-left: 3px solid #ffffff;
+}
+
+#sidebar .list-unstyled.CTAs {
+    padding: 20px;
+}
+
+#sidebar .list-unstyled.CTAs a {
+    text-align: center;
+    display: block;
+    margin-bottom: 5px;
+}
+
+/* Content Area */
+#content {
+    width: 100%;
+    padding: 0;
+    min-height: 100vh;
+    transition: all 0.3s;
+    display: flex;
+    flex-direction: column;
+}
+
+.topbar {
+    background-color: var(--topbar-bg);
+    border-bottom: 1px solid var(--topbar-border-color);
+    padding: 0.5rem 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,.1);
+    z-index: 1000;
+}
+
+.main-content-area {
+    flex-grow: 1;
+    padding: 20px;
+}
+
+/* Buttons and Controls */
+.sidebar-toggler {
+    color: #333;
+}
+
+.btn-primary {
+    background-color: var(--primary-green);
+    border-color: var(--primary-green);
+}
+
+.btn-primary:hover {
+    background-color: var(--medium-green);
+    border-color: var(--medium-green);
+}
+
+.btn-outline-primary {
+    color: var(--primary-green);
+    border-color: var(--primary-green);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary-green);
+    border-color: var(--primary-green);
+}
+
+/* User Dropdown */
+.user-dropdown .dropdown-toggle::after {
+    display: none; /* Hide default caret */
+}
+
+.user-dropdown img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+/* Cards */
+.card {
+    border: 1px solid var(--card-border-color);
+    border-radius: 0.5rem;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid var(--card-border-color);
+    padding: 1rem;
+    font-weight: 600;
+}
+
+.card-header.bg-primary {
+    background-color: var(--primary-green) !important;
+    color: white;
+}
+
+.card-header.bg-success {
+    background-color: var(--primary-green) !important;
+    color: white;
+}
+
+.card-header.bg-info {
+    background-color: var(--medium-green) !important;
+    color: white;
+}
+
+.card-header.bg-secondary {
+    background-color: var(--dark-green) !important;
+    color: white;
+}
+
+/* Tables */
+.table {
+    margin-bottom: 0;
+}
+
+.table-hover tbody tr:hover {
+    background-color: var(--light-green);
+}
+
+.table thead th {
+    border-top: none;
+    border-bottom: 2px solid var(--primary-green);
+    background-color: #f8f9fa;
+    color: #495057;
+}
+
+/* Status Badges */
+.badge-success, .bg-success {
+    background-color: var(--primary-green) !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #sidebar {
+        margin-left: -250px;
+    }
+    #sidebar.collapsed {
+        margin-left: 0;
+    }
+    #content {
+        width: 100%;
+    }
+}
+
+/* Form Controls */
+.form-control:focus {
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
+}
+
+/* Client Portal Specific */
+.client-card {
+    transition: transform 0.3s;
+}
+
+.client-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Login/Signup Forms */
+.auth-form-container {
+    max-width: 450px;
+    margin: 2rem auto;
+}
+
+.auth-form-container .card {
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.auth-form-container .card-header {
+    text-align: center;
+    padding: 1.5rem 1rem;
+}
+
+.auth-form-container .card-body {
+    padding: 2rem;
+}
+
+/* Dashboard Stats */
+.stat-card {
+    border-radius: 0.5rem;
+    border-left: 4px solid var(--primary-green);
+    transition: transform 0.3s;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-icon {
+    font-size: 2rem;
+    color: var(--primary-green);
+}

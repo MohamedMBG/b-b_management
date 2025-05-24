@@ -5,7 +5,7 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-lg-6 col-md-8 col-sm-10">
+    <div class="auth-form-container">
         <div class="card shadow-sm">
             <div class="card-header bg-primary text-white">
                 <h4 class="mb-0 text-center">Client Sign In</h4>
@@ -21,7 +21,7 @@
             </div>
             <div class="card-footer text-center py-3">
                 <small class="text-muted">
-                    New here? <a href="{% url 'client_signup' %}">Create an account</a>
+                    New here? <a href="{% url 'client_signup' %}" class="text-success">Create an account</a>
                 </small>
             </div>
         </div>
