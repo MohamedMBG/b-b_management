@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'API',
     'admin_panel',
     'rest_framework',
-    'django_filters'
+    'django_filters',
+    'client_portal',
 ]
 
 #for the client authentificaiton
