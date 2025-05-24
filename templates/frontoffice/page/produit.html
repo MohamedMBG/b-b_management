@@ -1,99 +1,241 @@
-{% load static %}
-<script src="{% static 'script/produit.js' %}" type="text/javascript"></script>
-<div class="container-fluid">
-    <div class="modal fade" id="error" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-         aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Erreur</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
+{% extends "frontoffice/master_page.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-box me-2"></i>Gestion des Produits</h5>
+                    <div>
+                        <button class="btn btn-sm btn-light" id="addProductBtn"><i class="fas fa-plus me-1"></i>Ajouter Produit</button>
+                        <button class="btn btn-sm btn-light ms-2" id="exportProducts"><i class="fas fa-download me-1"></i>Exporter</button>
+                    </div>
                 </div>
-                <div class="modal-body">
-                    <p>Impossible de supprimer ce produit</p>
+                <div class="card-body">
+                    <!-- Filters Row -->
+                    <div class="row mb-4">
+                        <div class="col-md-3 mb-3">
+                            <label for="categoryFilter" class="form-label">Catégorie</label>
+                            <select class="form-select" id="categoryFilter">
+                                <option value="">Toutes les catégories</option>
+                                <option value="1">Électronique</option>
+                                <option value="2">Vêtements</option>
+                                <option value="3">Alimentation</option>
+                                <option value="4">Meubles</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="supplierFilter" class="form-label">Fournisseur</label>
+                            <select class="form-select" id="supplierFilter">
+                                <option value="">Tous les fournisseurs</option>
+                                <option value="1">Fournisseur A</option>
+                                <option value="2">Fournisseur B</option>
+                                <option value="3">Fournisseur C</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="stockFilter" class="form-label">Stock</label>
+                            <select class="form-select" id="stockFilter">
+                                <option value="">Tous</option>
+                                <option value="low">Stock bas</option>
+                                <option value="out">Rupture de stock</option>
+                                <option value="available">Disponible</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="searchFilter" class="form-label">Recherche</label>
+                            <input type="text" class="form-control" id="searchFilter" placeholder="Rechercher...">
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped" id="productsTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Désignation</th>
+                                    <th>Catégorie</th>
+                                    <th>Prix</th>
+                                    <th>Quantité</th>
+                                    <th>Fournisseur</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Product data will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    <div class="card bg-white">
-        <div class="card-header card-color">
-            <p class="h2 text-center text-uppercase font-weight-bold pt-2">Gestion des produits</p>
-        </div>
-        <form> {% csrf_token %}
-            <div class="card-body container-fluid">
-                <div class="row">
-                    <div class="col-sm-6 mb-2">
-                        <label for="code">Reference : </label>
-                        <input class="" type="text" id="id" hidden>
-                        <input class="form-control" type="text" id="reference" required>
-                    </div>
-                    <div class="col-sm-6 mb-2">
-                        <label for="nom">designation : </label>
-                        <input class="form-control" type="text" id="designation" required>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-6 mb-2">
-                        <label for="prix">Prix : </label>
-                        <input class="" type="text" id="id" hidden>
-                        <input class="form-control" type="text" id="prix" required>
-
-                    </div>
-                    <div class="col-sm-6 mb-2">
-                        <label for="date">quantite : </label>
-                        <input class="form-control" type="number" id="quantite" required>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-6 mb-2">
-                        <label for="nom">fournisseur : </label>
-                        <select class="form-control" id="fournisseur">
-                            <option class="twichiya">Select fournisseur</option>
-                        </select>
-                    </div>
-                    <div class="col-sm-6 mb-2">
-                        <label for="nom">risk management : </label>
-                        <input class="form-control" type="number" id="risk">
-                        <div class="row">
-                            <div class="col">
-                                <button type="button" class="btn btn-outline-success mt-3 mb-3" id="btnrisk">Check</button>
-                            </div>
-                            <div class="col">
-                                <button type="button" class="btn btn-outline-success mt-3 mb-3" id="btnref">Refresh</button>
-                            </div>
-                         </div>
-                    </div>
-                </div>
-
-
-
-                <div class="row">
-                    <div class="col">
-                        <button type="button" class="btn btn-outline-success mt-3 mb-3" id="btn">Ajouter</button>
-                    </div>
-                </div>
-                <div class="row table-responsive m-auto rounded">
-                    <table id="tproduit" class="table table-hover w-100">
-                        <thead>
-                        <tr class="text-uppercase bg-light  w-100">
-                            <th scope="col">Id</th>
-                            <th scope="col">reference</th>
-                            <th scope="col">designation</th>
-                            <th scope="col">prixU</th>
-                            <th scope="col">quantite</th>
-                            <th scope="col">fournisseur</th>
-                            <th scope="col">Supprimer</th>
-                            <th scope="col">Modifier</th>
-                        </tr>
-                        </thead>
-                        <tbody id="table-content">
-
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </form>
     </div>
 </div>
+
+<!-- Add/Edit Product Modal -->
+<div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="productModalLabel">Ajouter Produit</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="productForm">
+                    <input type="hidden" id="productId">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="designation" class="form-label">Désignation</label>
+                            <input type="text" class="form-control" id="designation" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="category" class="form-label">Catégorie</label>
+                            <select class="form-select" id="category" required>
+                                <option value="">Sélectionner une catégorie</option>
+                                <option value="1">Électronique</option>
+                                <option value="2">Vêtements</option>
+                                <option value="3">Alimentation</option>
+                                <option value="4">Meubles</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="price" class="form-label">Prix</label>
+                            <div class="input-group">
+                                <span class="input-group-text">€</span>
+                                <input type="number" class="form-control" id="price" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="quantity" class="form-label">Quantité</label>
+                            <input type="number" class="form-control" id="quantity" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="supplier" class="form-label">Fournisseur</label>
+                            <select class="form-select" id="supplier" required>
+                                <option value="">Sélectionner un fournisseur</option>
+                                <option value="1">Fournisseur A</option>
+                                <option value="2">Fournisseur B</option>
+                                <option value="3">Fournisseur C</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="alertQuantity" class="form-label">Quantité d'alerte</label>
+                            <input type="number" class="form-control" id="alertQuantity">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="saveProduct">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Sample data for products - would be replaced with real data from backend
+    document.addEventListener('DOMContentLoaded', function() {
+        // Sample product data
+        var productsData = [
+            { id: 1, designation: 'Laptop HP ProBook', category: 'Électronique', price: 899.99, quantity: 15, supplier: 'Fournisseur A', status: 'Disponible' },
+            { id: 2, designation: 'T-shirt Coton', category: 'Vêtements', price: 19.99, quantity: 50, supplier: 'Fournisseur B', status: 'Disponible' },
+            { id: 3, designation: 'Café Arabica 1kg', category: 'Alimentation', price: 12.50, quantity: 3, supplier: 'Fournisseur C', status: 'Stock bas' },
+            { id: 4, designation: 'Table de Bureau', category: 'Meubles', price: 149.99, quantity: 8, supplier: 'Fournisseur A', status: 'Disponible' },
+            { id: 5, designation: 'Smartphone Samsung', category: 'Électronique', price: 699.99, quantity: 0, supplier: 'Fournisseur B', status: 'Rupture de stock' }
+        ];
+        
+        // Populate products table
+        var productsHtml = '';
+        productsData.forEach(function(product) {
+            var statusClass = 'bg-success';
+            if (product.status === 'Stock bas') {
+                statusClass = 'bg-warning text-dark';
+            } else if (product.status === 'Rupture de stock') {
+                statusClass = 'bg-danger';
+            }
+            
+            productsHtml += `
+                <tr>
+                    <td>${product.id}</td>
+                    <td>${product.designation}</td>
+                    <td>${product.category}</td>
+                    <td>€${product.price.toFixed(2)}</td>
+                    <td>${product.quantity}</td>
+                    <td>${product.supplier}</td>
+                    <td><span class="badge ${statusClass}">${product.status}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary edit-product" data-id="${product.id}"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-outline-danger delete-product" data-id="${product.id}"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        document.querySelector('#productsTable tbody').innerHTML = productsHtml;
+        
+        // Initialize DataTable
+        $(document).ready(function() {
+            $('#productsTable').DataTable({
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/French.json"
+                }
+            });
+        });
+        
+        // Add Product button click
+        document.getElementById('addProductBtn').addEventListener('click', function() {
+            document.getElementById('productModalLabel').textContent = 'Ajouter Produit';
+            document.getElementById('productForm').reset();
+            document.getElementById('productId').value = '';
+            var productModal = new bootstrap.Modal(document.getElementById('productModal'));
+            productModal.show();
+        });
+        
+        // Edit Product button click
+        document.querySelectorAll('.edit-product').forEach(function(button) {
+            button.addEventListener('click', function() {
+                var productId = this.getAttribute('data-id');
+                var product = productsData.find(p => p.id == productId);
+                
+                document.getElementById('productModalLabel').textContent = 'Modifier Produit';
+                document.getElementById('productId').value = product.id;
+                document.getElementById('designation').value = product.designation;
+                // Set other fields...
+                
+                var productModal = new bootstrap.Modal(document.getElementById('productModal'));
+                productModal.show();
+            });
+        });
+        
+        // Save Product button click
+        document.getElementById('saveProduct').addEventListener('click', function() {
+            // Here would be the code to save the product data
+            alert('Produit enregistré avec succès!');
+            var productModal = bootstrap.Modal.getInstance(document.getElementById('productModal'));
+            productModal.hide();
+        });
+        
+        // Delete Product button click
+        document.querySelectorAll('.delete-product').forEach(function(button) {
+            button.addEventListener('click', function() {
+                var productId = this.getAttribute('data-id');
+                if (confirm('Êtes-vous sûr de vouloir supprimer ce produit?')) {
+                    // Here would be the code to delete the product
+                    alert('Produit supprimé avec succès!');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
