@@ -37,10 +37,16 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'API',
-    'frontoffice',
+    'admin_panel',
     'rest_framework',
     'django_filters'
 ]
+
+#for the client authentificaiton
+# LOGIN_URL = 'client_signin'
+LOGIN_REDIRECT_URL = 'client_dashboard'
+LOGOUT_REDIRECT_URL = '/'
+
 
 REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': (

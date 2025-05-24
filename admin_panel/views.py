@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from frontoffice import  *
+from admin_panel import  *
 from django.shortcuts import render
 from django.contrib.auth import authenticate, login, logout
 from django.http import *
@@ -46,7 +46,7 @@ class LogoutView(TemplateView):
       #      return redirect('produits')
     #else :
      #   form = ProduitForm()
-    #return render(request, 'frontoffice/produit_form.html', {'form': form})
+    #return render(request, 'admin_panel/produit_form.html', {'form': form})
 
 
 def produit_all(request):

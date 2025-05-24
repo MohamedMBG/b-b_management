@@ -2,4 +2,4 @@ from django.apps import AppConfig
 
 
 class FrontofficeConfig(AppConfig):
-    name = 'frontoffice'
+    name = 'admin_panel'

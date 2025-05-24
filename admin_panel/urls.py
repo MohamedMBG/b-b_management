@@ -1,4 +1,4 @@
-"""frontoffice URL Configuration
+"""admin_panel URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/3.0/topics/http/urls/
@@ -16,10 +16,10 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from frontoffice import views
+from admin_panel import views
 from django.urls import path, re_path
 
-from frontoffice.views import LoginView
+from admin_panel.views import LoginView
 
 urlpatterns = [
     re_path(r'^$', LoginView.as_view()),
