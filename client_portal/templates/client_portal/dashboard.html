@@ -1,55 +1,65 @@
 {% extends "base.html" %}
 
+{% block title %}Client Dashboard - {{ block.super }}{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-header bg-info text-white">
-                    Client Profile
-                </div>
-                <div class="card-body">
-                    <h5 class="card-title">{{ request.user.get_full_name }}</h5>
-                    <p class="card-text">
-                        <strong>Email:</strong> {{ request.user.email }}<br>
-                        <strong>Phone:</strong> {{ request.user.telephone }}<br>
-                        <strong>Address:</strong> {{ request.user.adresse }}
-                    </p>
-                </div>
+<div class="row">
+    <!-- Sidebar/Profile Section -->
+    <div class="col-lg-3 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Client Profile</h5>
             </div>
+            <div class="card-body text-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="bi bi-person-circle mb-3 text-secondary" viewBox="0 0 16 16">
+                    <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0"/>
+                    <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1"/>
+                </svg>
+                <h5 class="card-title">{{ request.user.get_full_name|default:request.user.email }}</h5>
+                <p class="card-text text-muted">{{ request.user.email }}</p>
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>Phone:</strong> {{ request.user.telephone|default:"N/A" }}</li>
+                <li class="list-group-item"><strong>Address:</strong> {{ request.user.adresse|default:"N/A" }}</li>
+            </ul>
         </div>
-        
-        <div class="col-md-9">
-            <div class="card">
-                <div class="card-header bg-info text-white">
-                    Recent Purchases
+    </div>
+
+    <!-- Main Content Section -->
+    <div class="col-lg-9">
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Recent Purchases</h5>
+            </div>
+            <div class="card-body">
+                {% if purchases %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">Product</th>
+                                <th scope="col">Quantity</th>
+                                <th scope="col">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for purchase in purchases %}
+                            <tr>
+                                <td>{{ purchase.produit.designation }}</td>
+                                <td>{{ purchase.quantite }}</td>
+                                <td>{{ purchase.date_Achat|date:"Y-m-d" }}</td> {# Changed date format #}
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted">No purchases found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                <div class="card-body">
-                    {% if purchases %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Product</th>
-                                    <th>Quantity</th>
-                                    <th>Date</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for purchase in purchases %}
-                                <tr>
-                                    <td>{{ purchase.produit.designation }}</td>
-                                    <td>{{ purchase.quantite }}</td>
-                                    <td>{{ purchase.date_Achat|date:"M d, Y" }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <p class="text-muted">No purchases yet.</p>
-                    {% endif %}
-                </div>
+                {% else %}
+                <p class="text-center text-muted mt-3">You haven't made any purchases yet.</p>
+                {% endif %}
             </div>
         </div>
     </div>
