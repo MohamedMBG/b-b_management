@@ -1,4 +1,4 @@
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, get_user_model
 from django.shortcuts import render
 from rest_framework import viewsets, generics, status
 from rest_framework import permissions
@@ -37,7 +37,7 @@ class AchatViewSet(viewsets.ModelViewSet):
     serializer_class = AchatSerializer
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all().order_by('username')
+    queryset = get_user_model().objects.all().order_by("email") # Use email as it's the USERNAME_FIELD
     serializer_class = UserSerializer
 
 class CountViewSet(APIView):

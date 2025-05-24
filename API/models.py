@@ -1,8 +1,8 @@
-from tkinter import CASCADE
+
 
 from django.db import models
 from django.utils import timezone
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin, Group, Permission
 
 import json
 
@@ -89,6 +89,27 @@ class ClientManager(BaseUserManager):
 
 
 class Client(AbstractBaseUser, PermissionsMixin):
+    # Add related_name to resolve clashes with auth.User
+    groups = models.ManyToManyField(
+        Group,
+        verbose_name=("groups"),
+        blank=True,
+        help_text=(
+            "The groups this user belongs to. A user will get all permissions "
+            "granted to each of their groups."
+        ),
+        related_name="api_client_groups",  # Unique related_name
+        related_query_name="api_client",
+    )
+    user_permissions = models.ManyToManyField(
+        Permission,
+        verbose_name=("user permissions"),
+        blank=True,
+        help_text=("Specific permissions for this user."),
+        related_name="api_client_user_permissions",  # Unique related_name
+        related_query_name="api_client",
+    )
+
     nom = models.CharField(max_length=50)
     prenom = models.CharField(max_length=50)
     email = models.EmailField(max_length=50, unique=True)

@@ -152,3 +152,11 @@ LOGIN_URL = '/'
 TEMPLATE_DIRS = (
     BASE_DIR / 'templates',
 )
+
+
+# Custom User Model
+AUTH_USER_MODEL = 'API.Client'
+
+# Default primary key field type
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+

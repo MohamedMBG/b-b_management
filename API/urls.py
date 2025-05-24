@@ -9,7 +9,7 @@ router.register(r'clients', views.ClientViewSet)
 router.register(r'fournisseurs', views.FournisseurViewSet)
 router.register(r'produits', views.ProduitViewSet)
 router.register(r'achats', views.AchatViewSet)
-router.register(r'users', views.UserViewSet)
+
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
 urlpatterns = [
