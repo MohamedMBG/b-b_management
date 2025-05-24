@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'django_filters',
     'client_portal',
+    'crispy_forms',
+    'crispy_bootstrap5',
 ]
 
 #for the client authentificaiton
@@ -160,4 +162,10 @@ AUTH_USER_MODEL = 'API.Client'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+
+# Crispy Forms Settings
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"
 
