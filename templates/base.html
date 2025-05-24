@@ -55,7 +55,7 @@
                             <li class="nav-item dropdown user-dropdown">
                                 <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdownMenuLink" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     <img src="{% static 'img/no-photo.png' %}" alt="User Avatar">
-                                    <span>{{ user.get_full_name|default:user.email }}</span>
+                                    <span>{% if user.is_authenticated %}{{ user.get_full_name|default:user.email }}{% else %}Guest{% endif %}</span>
                                     <i class="fas fa-caret-down ms-2"></i>
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMenuLink">
