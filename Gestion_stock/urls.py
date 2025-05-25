@@ -16,7 +16,7 @@ urlpatterns = [
     re_path(r'^admindash/produits$', TemplateView.as_view(template_name='frontoffice/page/produit.html'), name='admin_produits'),
     path("admindash/clients/", TemplateView.as_view(template_name="frontoffice/page/client.html"), name="admin_clients"),
     path("admindash/fournisseurs/", TemplateView.as_view(template_name="frontoffice/page/fournisseur.html"), name="admin_fournisseurs"),
-    re_path(r'^admindash/achats$', TemplateView.as_view(template_name='frontoffice/page/achat.html')),
+    path("admindash/achats/", TemplateView.as_view(template_name="frontoffice/page/achat.html"), name="admin_achats"),
     # Client Portal URLs
     re_path('client/signup/', client_views.signup, name='client_signup'),
     re_path('client/signin/', client_views.signin, name='client_signin'),
