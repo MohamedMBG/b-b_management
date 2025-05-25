@@ -19,19 +19,14 @@
                             <label for="categoryFilter" class="form-label">Catégorie</label>
                             <select class="form-select" id="categoryFilter">
                                 <option value="">Toutes les catégories</option>
-                                <option value="1">Électronique</option>
-                                <option value="2">Vêtements</option>
-                                <option value="3">Alimentation</option>
-                                <option value="4">Meubles</option>
+                                <!-- Categories will be loaded dynamically -->
                             </select>
                         </div>
                         <div class="col-md-3 mb-3">
                             <label for="supplierFilter" class="form-label">Fournisseur</label>
                             <select class="form-select" id="supplierFilter">
                                 <option value="">Tous les fournisseurs</option>
-                                <option value="1">Fournisseur A</option>
-                                <option value="2">Fournisseur B</option>
-                                <option value="3">Fournisseur C</option>
+                                <!-- Suppliers will be loaded dynamically -->
                             </select>
                         </div>
                         <div class="col-md-3 mb-3">
@@ -54,9 +49,9 @@
                             <thead>
                                 <tr>
                                     <th>ID</th>
+                                    <th>Référence</th>
                                     <th>Désignation</th>
-                                    <th>Catégorie</th>
-                                    <th>Prix</th>
+                                    <th>Prix (€)</th>
                                     <th>Quantité</th>
                                     <th>Fournisseur</th>
                                     <th>Statut</th>
@@ -64,7 +59,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- Product data will be loaded here -->
+                                <!-- Product data will be loaded here by AJAX -->
                             </tbody>
                         </table>
                     </div>
@@ -84,34 +79,40 @@
             </div>
             <div class="modal-body">
                 <form id="productForm">
+                    {% csrf_token %} {# Ensure CSRF token is available for AJAX #}
                     <input type="hidden" id="productId">
                     <div class="row">
+                         <div class="col-md-6 mb-3">
+                            <label for="reference" class="form-label">Référence</label>
+                            <input type="text" class="form-control" id="reference" required>
+                        </div>
                         <div class="col-md-6 mb-3">
                             <label for="designation" class="form-label">Désignation</label>
                             <input type="text" class="form-control" id="designation" required>
                         </div>
+                    </div>
+                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="category" class="form-label">Catégorie</label>
-                            <select class="form-select" id="category" required>
-                                <option value="">Sélectionner une catégorie</option>
-                                <option value="1">Électronique</option>
-                                <option value="2">Vêtements</option>
-                                <option value="3">Alimentation</option>
-                                <option value="4">Meubles</option>
-                            </select>
+                            {# Assuming category is a simple text field for now, adjust if it's a ForeignKey #}
+                            <input type="text" class="form-control" id="category" placeholder="e.g., Électronique">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="price" class="form-label">Prix Unitaire</label>
+                            <div class="input-group">
+                                <span class="input-group-text">€</span>
+                                <input type="number" class="form-control" id="priceU" step="0.01" required>
+                            </div>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="price" class="form-label">Prix</label>
-                            <div class="input-group">
-                                <span class="input-group-text">€</span>
-                                <input type="number" class="form-control" id="price" step="0.01" required>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
                             <label for="quantity" class="form-label">Quantité</label>
                             <input type="number" class="form-control" id="quantity" required>
+                        </div>
+                         <div class="col-md-6 mb-3">
+                            <label for="alertQuantity" class="form-label">Quantité d'alerte</label>
+                            <input type="number" class="form-control" id="alertQuantity">
                         </div>
                     </div>
                     <div class="row">
@@ -119,19 +120,13 @@
                             <label for="supplier" class="form-label">Fournisseur</label>
                             <select class="form-select" id="supplier" required>
                                 <option value="">Sélectionner un fournisseur</option>
-                                <option value="1">Fournisseur A</option>
-                                <option value="2">Fournisseur B</option>
-                                <option value="3">Fournisseur C</option>
+                                <!-- Options loaded dynamically -->
                             </select>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="alertQuantity" class="form-label">Quantité d'alerte</label>
-                            <input type="number" class="form-control" id="alertQuantity">
+                         <div class="col-md-6 mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" rows="2"></textarea>
                         </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="description" class="form-label">Description</label>
-                        <textarea class="form-control" id="description" rows="3"></textarea>
                     </div>
                 </form>
             </div>
@@ -144,36 +139,38 @@
 </div>
 
 <script>
-    // Sample data for products - would be replaced with real data from backend
-    document.addEventListener('DOMContentLoaded', function() {
-        // Sample product data
-        var productsData = [
-            { id: 1, designation: 'Laptop HP ProBook', category: 'Électronique', price: 899.99, quantity: 15, supplier: 'Fournisseur A', status: 'Disponible' },
-            { id: 2, designation: 'T-shirt Coton', category: 'Vêtements', price: 19.99, quantity: 50, supplier: 'Fournisseur B', status: 'Disponible' },
-            { id: 3, designation: 'Café Arabica 1kg', category: 'Alimentation', price: 12.50, quantity: 3, supplier: 'Fournisseur C', status: 'Stock bas' },
-            { id: 4, designation: 'Table de Bureau', category: 'Meubles', price: 149.99, quantity: 8, supplier: 'Fournisseur A', status: 'Disponible' },
-            { id: 5, designation: 'Smartphone Samsung', category: 'Électronique', price: 699.99, quantity: 0, supplier: 'Fournisseur B', status: 'Rupture de stock' }
-        ];
-        
-        // Populate products table
-        var productsHtml = '';
-        productsData.forEach(function(product) {
-            var statusClass = 'bg-success';
-            if (product.status === 'Stock bas') {
-                statusClass = 'bg-warning text-dark';
-            } else if (product.status === 'Rupture de stock') {
-                statusClass = 'bg-danger';
-            }
-            
+document.addEventListener('DOMContentLoaded', function() {
+    const productModalElement = document.getElementById('productModal');
+    const productModal = new bootstrap.Modal(productModalElement);
+    const productForm = document.getElementById('productForm');
+    const productsTableBody = document.querySelector('#productsTable tbody');
+    const supplierSelectModal = document.getElementById('supplier');
+    const supplierFilterSelect = document.getElementById('supplierFilter');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    let productsDataTable;
+
+    // --- Utility Functions ---
+    function getStatusBadge(isBelowAlert) {
+        // Simplified status based on alert level - adjust logic as needed
+        if (isBelowAlert === null || isBelowAlert === undefined) return '<span class="badge bg-secondary">Inconnu</span>';
+        return isBelowAlert
+            ? '<span class="badge bg-warning text-dark">Stock bas</span>'
+            : '<span class="badge bg-success">Disponible</span>';
+        // Add logic for 'Rupture de stock' if quantity is 0
+    }
+
+    function populateTable(products) {
+        let productsHtml = '';
+        products.forEach(function(product) {
             productsHtml += `
-                <tr>
+                <tr data-id="${product.id}">
                     <td>${product.id}</td>
+                    <td>${product.reference || 'N/A'}</td>
                     <td>${product.designation}</td>
-                    <td>${product.category}</td>
-                    <td>€${product.price.toFixed(2)}</td>
-                    <td>${product.quantity}</td>
-                    <td>${product.supplier}</td>
-                    <td><span class="badge ${statusClass}">${product.status}</span></td>
+                    <td>${parseFloat(product.prixU).toFixed(2)}</td>
+                    <td>${product.quantite}</td>
+                    <td>${product.fournisseur_libelle}</td>
+                    <td>${getStatusBadge(product.is_below_alert)}</td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary edit-product" data-id="${product.id}"><i class="fas fa-edit"></i></button>
                         <button class="btn btn-sm btn-outline-danger delete-product" data-id="${product.id}"><i class="fas fa-trash"></i></button>
@@ -181,61 +178,190 @@
                 </tr>
             `;
         });
-        
-        document.querySelector('#productsTable tbody').innerHTML = productsHtml;
-        
-        // Initialize DataTable
-        $(document).ready(function() {
-            $('#productsTable').DataTable({
-                "language": {
-                    "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/French.json"
+        productsTableBody.innerHTML = productsHtml;
+
+        // Re-attach event listeners for edit/delete buttons
+        attachActionListeners();
+
+        // Initialize or re-initialize DataTable
+        if (productsDataTable) {
+            productsDataTable.destroy();
+        }
+        productsDataTable = $('#productsTable').DataTable({
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/French.json"
+            },
+            "order": [[ 0, "desc" ]] // Order by ID descending by default
+        });
+    }
+
+    function loadProducts() {
+        fetch('/api/produits/') // Use the correct API endpoint
+            .then(response => response.json())
+            .then(data => {
+                if (data.produits) {
+                    populateTable(data.produits);
+                } else {
+                    console.error('Error loading products:', data);
+                    productsTableBody.innerHTML = '<tr><td colspan="8">Erreur lors du chargement des produits.</td></tr>';
                 }
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                productsTableBody.innerHTML = '<tr><td colspan="8">Erreur réseau lors du chargement des produits.</td></tr>';
             });
-        });
-        
-        // Add Product button click
-        document.getElementById('addProductBtn').addEventListener('click', function() {
-            document.getElementById('productModalLabel').textContent = 'Ajouter Produit';
-            document.getElementById('productForm').reset();
-            document.getElementById('productId').value = '';
-            var productModal = new bootstrap.Modal(document.getElementById('productModal'));
-            productModal.show();
-        });
-        
+    }
+
+    function loadSuppliers() {
+        fetch('/api/fournisseurs/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.fournisseurs) {
+                    let optionsHtml = '<option value="">Sélectionner un fournisseur</option>';
+                    let filterOptionsHtml = '<option value="">Tous les fournisseurs</option>';
+                    data.fournisseurs.forEach(f => {
+                        optionsHtml += `<option value="${f.id}">${f.libelle}</option>`;
+                        filterOptionsHtml += `<option value="${f.id}">${f.libelle}</option>`;
+                    });
+                    supplierSelectModal.innerHTML = optionsHtml;
+                    supplierFilterSelect.innerHTML = filterOptionsHtml;
+                } else {
+                    console.error('Error loading suppliers:', data);
+                }
+            })
+            .catch(error => console.error('Fetch error loading suppliers:', error));
+    }
+
+    function attachActionListeners() {
         // Edit Product button click
-        document.querySelectorAll('.edit-product').forEach(function(button) {
-            button.addEventListener('click', function() {
-                var productId = this.getAttribute('data-id');
-                var product = productsData.find(p => p.id == productId);
-                
-                document.getElementById('productModalLabel').textContent = 'Modifier Produit';
-                document.getElementById('productId').value = product.id;
-                document.getElementById('designation').value = product.designation;
-                // Set other fields...
-                
-                var productModal = new bootstrap.Modal(document.getElementById('productModal'));
-                productModal.show();
-            });
+        document.querySelectorAll('.edit-product').forEach(button => {
+            button.addEventListener('click', handleEditClick);
         });
-        
-        // Save Product button click
-        document.getElementById('saveProduct').addEventListener('click', function() {
-            // Here would be the code to save the product data
-            alert('Produit enregistré avec succès!');
-            var productModal = bootstrap.Modal.getInstance(document.getElementById('productModal'));
-            productModal.hide();
-        });
-        
+
         // Delete Product button click
-        document.querySelectorAll('.delete-product').forEach(function(button) {
-            button.addEventListener('click', function() {
-                var productId = this.getAttribute('data-id');
-                if (confirm('Êtes-vous sûr de vouloir supprimer ce produit?')) {
-                    // Here would be the code to delete the product
-                    alert('Produit supprimé avec succès!');
+        document.querySelectorAll('.delete-product').forEach(button => {
+            button.addEventListener('click', handleDeleteClick);
+        });
+    }
+
+    function handleEditClick(event) {
+        const button = event.currentTarget;
+        const productId = button.getAttribute('data-id');
+        // Fetch product details (or find from a local cache if available)
+        // For simplicity, we'll assume we need to fetch or have the data
+        // This part needs implementation: fetch(`/api/produits/${productId}/`) or similar
+        alert(`Edit action for product ID: ${productId} - Needs implementation`);
+        // Populate modal with product data
+        // document.getElementById('productModalLabel').textContent = 'Modifier Produit';
+        // document.getElementById('productId').value = product.id;
+        // ... set other fields ...
+        // productModal.show();
+    }
+
+    function handleDeleteClick(event) {
+        const button = event.currentTarget;
+        const productId = button.getAttribute('data-id');
+        if (confirm('Êtes-vous sûr de vouloir supprimer ce produit?')) {
+            fetch(`/api/produits/delete/${productId}/`, {
+                method: 'POST', // Or 'DELETE', ensure backend view matches
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json'
                 }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Produit supprimé avec succès!');
+                    loadProducts(); // Refresh the table
+                } else {
+                    alert('Erreur lors de la suppression: ' + (data.errors || 'Erreur inconnue'));
+                }
+            })
+            .catch(error => {
+                console.error('Delete error:', error);
+                alert('Erreur réseau lors de la suppression.');
             });
+        }
+    }
+
+    // --- Event Listeners ---
+    // Add Product button click
+    document.getElementById('addProductBtn').addEventListener('click', function() {
+        document.getElementById('productModalLabel').textContent = 'Ajouter Produit';
+        productForm.reset();
+        document.getElementById('productId').value = ''; // Clear ID for add mode
+        productModal.show();
+    });
+
+    // Save Product button click (Handles both Add and Update)
+    document.getElementById('saveProduct').addEventListener('click', function() {
+        const productId = document.getElementById('productId').value;
+        const isUpdate = productId !== '';
+        const url = isUpdate ? `/api/produits/update/${productId}/` : '/api/produits/add/';
+        const method = isUpdate ? 'PUT' : 'POST'; // Use PUT for update if backend supports it
+
+        const formData = {
+            reference: document.getElementById('reference').value,
+            designation: document.getElementById('designation').value,
+            // category: document.getElementById('category').value, // Add if category field exists and is needed
+            prixU: document.getElementById('priceU').value,
+            quantite: document.getElementById('quantity').value,
+            alert_quantite: document.getElementById('alertQuantity').value || null, // Handle optional field
+            fournisseur: document.getElementById('supplier').value,
+            // description: document.getElementById('description').value // Add if description field exists
+        };
+
+        // Basic validation example (enhance as needed)
+        if (!formData.designation || !formData.prixU || !formData.quantite || !formData.fournisseur) {
+            alert('Veuillez remplir tous les champs obligatoires.');
+            return;
+        }
+
+        fetch(url, {
+            method: method,
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => {
+            if (!response.ok) {
+                 // Try to parse error response
+                 return response.json().then(err => { throw err; });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                alert('Produit enregistré avec succès!');
+                productModal.hide();
+                loadProducts(); // Refresh the table
+            } else {
+                // Display specific errors from the backend
+                let errorMsg = 'Erreur lors de l\enregistrement.';
+                if (data.errors) {
+                    errorMsg += '\n' + JSON.stringify(data.errors);
+                }
+                alert(errorMsg);
+            }
+        })
+        .catch(error => {
+            console.error('Save error:', error);
+            let errorMsg = 'Erreur réseau ou serveur.';
+            if (error && typeof error === 'object') {
+                 errorMsg += '\n' + JSON.stringify(error);
+            }
+            alert(errorMsg);
         });
     });
+
+    // --- Initial Load ---
+    loadProducts();
+    loadSuppliers();
+
+});
 </script>
 {% endblock %}
+

@@ -23,11 +23,11 @@ class LoginView(TemplateView):
     template_name = 'login.html'
 
     def post(self, request, **kwargs):
-        username = request.POST.get('username', False)
+        email = request.POST.get("email", False)
         password = request.POST.get('password', False)
         # Use the custom Client model for authentication if it's the intended user model
         # If using Django's default User, adjust authentication accordingly.
-        user = authenticate(request, username=username, password=password)
+        user = authenticate(request, email=email, password=password)
         if user is not None and user.is_active:
             # Check if the user is staff or superuser to grant admin access
             if user.is_staff or user.is_superuser:

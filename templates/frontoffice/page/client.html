@@ -27,7 +27,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- Client data will be loaded here -->
+                                <!-- Client data will be loaded here by AJAX -->
                             </tbody>
                         </table>
                     </div>
@@ -47,6 +47,7 @@
             </div>
             <div class="modal-body">
                 <form id="clientForm">
+                    {% csrf_token %} {# Ensure CSRF token is available for AJAX #}
                     <input type="hidden" id="clientId">
                     <div class="mb-3">
                         <label for="nom" class="form-label">Nom</label>
@@ -66,7 +67,13 @@
                     </div>
                     <div class="mb-3">
                         <label for="adresse" class="form-label">Adresse</label>
-                        <textarea class="form-control" id="adresse" rows="3"></textarea>
+                        <textarea class="form-control" id="adresse" rows="2"></textarea>
+                    </div>
+                    {# Add password field only for adding new clients #}
+                    <div class="mb-3" id="passwordField">
+                        <label for="password" class="form-label">Mot de passe</label>
+                        <input type="password" class="form-control" id="password">
+                        <small class="form-text text-muted">Requis pour les nouveaux clients.</small>
                     </div>
                 </form>
             </div>
@@ -79,28 +86,25 @@
 </div>
 
 <script>
-    // Sample data for clients - would be replaced with real data from backend
-    document.addEventListener('DOMContentLoaded', function() {
-        // Sample client data
-        var clientsData = [
-            { id: 1, nom: 'Dupont', prenom: 'Jean', email: 'jean.dupont@example.com', telephone: '0123456789', adresse: '123 Rue de Paris, Paris' },
-            { id: 2, nom: 'Martin', prenom: 'Marie', email: 'marie.martin@example.com', telephone: '0234567890', adresse: '456 Avenue des Champs, Lyon' },
-            { id: 3, nom: 'Bernard', prenom: 'Pierre', email: 'pierre.bernard@example.com', telephone: '0345678901', adresse: '789 Boulevard Saint-Michel, Marseille' },
-            { id: 4, nom: 'Petit', prenom: 'Sophie', email: 'sophie.petit@example.com', telephone: '0456789012', adresse: '101 Rue de la République, Toulouse' },
-            { id: 5, nom: 'Robert', prenom: 'Thomas', email: 'thomas.robert@example.com', telephone: '0567890123', adresse: '202 Avenue Jean Jaurès, Nice' }
-        ];
-        
-        // Populate clients table
-        var clientsHtml = '';
-        clientsData.forEach(function(client) {
+document.addEventListener("DOMContentLoaded", function () {
+    const clientModalElement = document.getElementById("clientModal");
+    const clientModal = new bootstrap.Modal(clientModalElement);
+    const clientForm = document.getElementById("clientForm");
+    const clientsTableBody = document.querySelector("#clientsTable tbody");
+    const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
+    let clientsDataTable;
+
+    function populateTable(clients) {
+        let clientsHtml = "";
+        clients.forEach(function (client) {
             clientsHtml += `
-                <tr>
+                <tr data-id="${client.id}">
                     <td>${client.id}</td>
                     <td>${client.nom}</td>
                     <td>${client.prenom}</td>
                     <td>${client.email}</td>
-                    <td>${client.telephone}</td>
-                    <td>${client.adresse}</td>
+                    <td>${client.telephone || "N/A"}</td>
+                    <td>${client.adresse || "N/A"}</td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary edit-client" data-id="${client.id}"><i class="fas fa-edit"></i></button>
                         <button class="btn btn-sm btn-outline-danger delete-client" data-id="${client.id}"><i class="fas fa-trash"></i></button>
@@ -108,64 +112,205 @@
                 </tr>
             `;
         });
-        
-        document.querySelector('#clientsTable tbody').innerHTML = clientsHtml;
-        
-        // Initialize DataTable
-        $(document).ready(function() {
-            $('#clientsTable').DataTable({
-                "language": {
-                    "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/French.json"
+        clientsTableBody.innerHTML = clientsHtml;
+
+        attachActionListeners();
+
+        if (clientsDataTable) {
+            clientsDataTable.destroy();
+        }
+        clientsDataTable = $("#clientsTable").DataTable({
+            language: {
+                url: "//cdn.datatables.net/plug-ins/1.10.24/i18n/French.json",
+            },
+            order: [[0, "desc"]],
+        });
+    }
+
+    function loadClients() {
+        fetch("/api/clients/")
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.clients) {
+                    populateTable(data.clients);
+                } else {
+                    console.error("Error loading clients:", data);
+                    clientsTableBody.innerHTML = `<tr><td colspan="7">Erreur lors du chargement des clients.</td></tr>`;
                 }
+            })
+            .catch((error) => {
+                console.error("Fetch error:", error);
+                clientsTableBody.innerHTML = `<tr><td colspan="7">Erreur réseau lors du chargement des clients.</td></tr>`;
             });
+    }
+
+    function attachActionListeners() {
+        document.querySelectorAll(".edit-client").forEach((button) => {
+            button.addEventListener("click", handleEditClick);
         });
-        
-        // Add Client button click
-        document.getElementById('addClientBtn').addEventListener('click', function() {
-            document.getElementById('clientModalLabel').textContent = 'Ajouter Client';
-            document.getElementById('clientForm').reset();
-            document.getElementById('clientId').value = '';
-            var clientModal = new bootstrap.Modal(document.getElementById('clientModal'));
-            clientModal.show();
+        document.querySelectorAll(".delete-client").forEach((button) => {
+            button.addEventListener("click", handleDeleteClick);
         });
-        
-        // Edit Client button click
-        document.querySelectorAll('.edit-client').forEach(function(button) {
-            button.addEventListener('click', function() {
-                var clientId = this.getAttribute('data-id');
-                var client = clientsData.find(c => c.id == clientId);
-                
-                document.getElementById('clientModalLabel').textContent = 'Modifier Client';
-                document.getElementById('clientId').value = client.id;
-                document.getElementById('nom').value = client.nom;
-                document.getElementById('prenom').value = client.prenom;
-                document.getElementById('email').value = client.email;
-                document.getElementById('telephone').value = client.telephone;
-                document.getElementById('adresse').value = client.adresse;
-                
-                var clientModal = new bootstrap.Modal(document.getElementById('clientModal'));
+    }
+
+    function handleEditClick(event) {
+        const button = event.currentTarget;
+        const clientId = button.getAttribute("data-id");
+
+        // Fetch client details to populate the modal
+        fetch(`/api/clients/${clientId}/`) // Assuming an endpoint exists to get single client details
+            .then(response => {
+                if (!response.ok) throw new Error("Client not found or error fetching");
+                return response.json();
+            })
+            .then(data => {
+                if (data.client) {
+                    const client = data.client;
+                    document.getElementById("clientModalLabel").textContent = "Modifier Client";
+                    document.getElementById("clientId").value = client.id;
+                    document.getElementById("nom").value = client.nom;
+                    document.getElementById("prenom").value = client.prenom;
+                    document.getElementById("email").value = client.email;
+                    document.getElementById("telephone").value = client.telephone || "";
+                    document.getElementById("adresse").value = client.adresse || "";
+                    // Hide password field for editing
+                    document.getElementById("passwordField").style.display = "none";
+                    document.getElementById("password").required = false;
+                    clientModal.show();
+                } else {
+                     alert("Impossible de charger les détails du client.");
+                }
+            })
+            .catch(error => {
+                console.error("Edit fetch error:", error);
+                alert("Erreur lors du chargement des informations du client pour modification. Endpoint /api/clients/<id>/ non implémenté?");
+                // Fallback: Populate with data from table row if API endpoint is not ready
+                const row = button.closest("tr");
+                document.getElementById("clientModalLabel").textContent = "Modifier Client";
+                document.getElementById("clientId").value = clientId;
+                document.getElementById("nom").value = row.cells[1].textContent;
+                document.getElementById("prenom").value = row.cells[2].textContent;
+                document.getElementById("email").value = row.cells[3].textContent;
+                document.getElementById("telephone").value = row.cells[4].textContent === "N/A" ? "" : row.cells[4].textContent;
+                document.getElementById("adresse").value = row.cells[5].textContent === "N/A" ? "" : row.cells[5].textContent;
+                document.getElementById("passwordField").style.display = "none";
+                document.getElementById("password").required = false;
                 clientModal.show();
             });
-        });
-        
-        // Save Client button click
-        document.getElementById('saveClient').addEventListener('click', function() {
-            // Here would be the code to save the client data
-            alert('Client enregistré avec succès!');
-            var clientModal = bootstrap.Modal.getInstance(document.getElementById('clientModal'));
-            clientModal.hide();
-        });
-        
-        // Delete Client button click
-        document.querySelectorAll('.delete-client').forEach(function(button) {
-            button.addEventListener('click', function() {
-                var clientId = this.getAttribute('data-id');
-                if (confirm('Êtes-vous sûr de vouloir supprimer ce client?')) {
-                    // Here would be the code to delete the client
-                    alert('Client supprimé avec succès!');
-                }
-            });
-        });
+    }
+
+    function handleDeleteClick(event) {
+        const button = event.currentTarget;
+        const clientId = button.getAttribute("data-id");
+        if (confirm("Êtes-vous sûr de vouloir supprimer ce client?")) {
+            fetch(`/api/clients/delete/${clientId}/`, {
+                method: "POST", // Or DELETE
+                headers: {
+                    "X-CSRFToken": csrfToken,
+                    "Content-Type": "application/json",
+                },
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.success) {
+                        alert("Client supprimé avec succès!");
+                        loadClients(); // Refresh table
+                    } else {
+                        alert("Erreur lors de la suppression: " + (data.errors || "Erreur inconnue"));
+                    }
+                })
+                .catch((error) => {
+                    console.error("Delete error:", error);
+                    alert("Erreur réseau lors de la suppression.");
+                });
+        }
+    }
+
+    // Add Client button click
+    document.getElementById("addClientBtn").addEventListener("click", function () {
+        document.getElementById("clientModalLabel").textContent = "Ajouter Client";
+        clientForm.reset();
+        document.getElementById("clientId").value = ""; // Clear ID for add mode
+        // Show password field for adding
+        document.getElementById("passwordField").style.display = "block";
+        document.getElementById("password").required = true;
+        clientModal.show();
     });
+
+    // Save Client button click (Handles both Add and Update)
+    document.getElementById("saveClient").addEventListener("click", function () {
+        const clientId = document.getElementById("clientId").value;
+        const isUpdate = clientId !== "";
+        const url = isUpdate ? `/api/clients/update/${clientId}/` : "/api/clients/add/";
+        const method = isUpdate ? "PUT" : "POST"; // Use PUT for update
+
+        const formData = {
+            nom: document.getElementById("nom").value,
+            prenom: document.getElementById("prenom").value,
+            email: document.getElementById("email").value,
+            telephone: document.getElementById("telephone").value,
+            adresse: document.getElementById("adresse").value,
+        };
+
+        // Add password only if adding a new client and it's provided
+        if (!isUpdate) {
+            const password = document.getElementById("password").value;
+            if (!password) {
+                 alert("Le mot de passe est requis pour un nouveau client.");
+                 return;
+            }
+            formData.password = password;
+        } // For updates, password change should be handled separately if needed
+
+        // Basic validation
+        if (!formData.nom || !formData.prenom || !formData.email) {
+            alert("Veuillez remplir les champs Nom, Prénom et Email.");
+            return;
+        }
+
+        fetch(url, {
+            method: method,
+            headers: {
+                "X-CSRFToken": csrfToken,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(formData),
+        })
+            .then((response) => {
+                if (!response.ok) {
+                    return response.json().then((err) => {
+                        throw err;
+                    });
+                }
+                return response.json();
+            })
+            .then((data) => {
+                if (data.success) {
+                    alert("Client enregistré avec succès!");
+                    clientModal.hide();
+                    loadClients(); // Refresh table
+                } else {
+                    let errorMsg = "Erreur lors de l\'enregistrement.";
+                    if (data.errors) {
+                        errorMsg += "\n" + JSON.stringify(data.errors);
+                    }
+                    alert(errorMsg);
+                }
+            })
+            .catch((error) => {
+                console.error("Save error:", error);
+                let errorMsg = "Erreur réseau ou serveur.";
+                 if (error && typeof error === "object") {
+                    errorMsg += "\n" + JSON.stringify(error);
+                }
+                alert(errorMsg);
+            });
+    });
+
+    // Initial Load
+    loadClients();
+});
+
 </script>
 {% endblock %}
+

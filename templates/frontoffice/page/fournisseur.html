@@ -22,13 +22,12 @@
                                     <th>Email</th>
                                     <th>Téléphone</th>
                                     <th>Adresse</th>
-                                    <th>Produits Fournis</th>
-                                    <th>Statut</th>
+                                    {# Add other relevant columns if needed, e.g., Produits Fournis, Statut #}
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- Supplier data will be loaded here -->
+                                <!-- Supplier data will be loaded here by AJAX -->
                             </tbody>
                         </table>
                     </div>
@@ -48,10 +47,11 @@
             </div>
             <div class="modal-body">
                 <form id="supplierForm">
+                     {% csrf_token %} {# Ensure CSRF token is available for AJAX #}
                     <input type="hidden" id="supplierId">
                     <div class="mb-3">
-                        <label for="nom" class="form-label">Nom</label>
-                        <input type="text" class="form-control" id="nom" required>
+                        <label for="libelle" class="form-label">Nom (Libellé)</label>
+                        <input type="text" class="form-control" id="libelle" required>
                     </div>
                     <div class="mb-3">
                         <label for="email" class="form-label">Email</label>
@@ -65,13 +65,14 @@
                         <label for="adresse" class="form-label">Adresse</label>
                         <textarea class="form-control" id="adresse" rows="3"></textarea>
                     </div>
-                    <div class="mb-3">
+                    {# Add status field if needed in the form #}
+                    {# <div class="mb-3">
                         <label for="status" class="form-label">Statut</label>
                         <select class="form-select" id="status">
                             <option value="Actif">Actif</option>
                             <option value="Inactif">Inactif</option>
                         </select>
-                    </div>
+                    </div> #}
                 </form>
             </div>
             <div class="modal-footer">
@@ -83,31 +84,25 @@
 </div>
 
 <script>
-    // Sample data for suppliers - would be replaced with real data from backend
-    document.addEventListener('DOMContentLoaded', function() {
-        // Sample supplier data
-        var suppliersData = [
-            { id: 1, nom: 'Fournisseur A', email: 'contact@fournisseura.com', telephone: '0123456789', adresse: '123 Rue des Fournisseurs, Paris', produits: 15, statut: 'Actif' },
-            { id: 2, nom: 'Fournisseur B', email: 'contact@fournisseurb.com', telephone: '0234567890', adresse: '456 Avenue des Distributeurs, Lyon', produits: 8, statut: 'Actif' },
-            { id: 3, nom: 'Fournisseur C', email: 'contact@fournisseurc.com', telephone: '0345678901', adresse: '789 Boulevard des Grossistes, Marseille', produits: 12, statut: 'Actif' },
-            { id: 4, nom: 'Fournisseur D', email: 'contact@fournisseurd.com', telephone: '0456789012', adresse: '101 Rue du Commerce, Toulouse', produits: 0, statut: 'Inactif' },
-            { id: 5, nom: 'Fournisseur E', email: 'contact@fournisseure.com', telephone: '0567890123', adresse: '202 Avenue de l\'Industrie, Nice', produits: 5, statut: 'Actif' }
-        ];
-        
-        // Populate suppliers table
-        var suppliersHtml = '';
-        suppliersData.forEach(function(supplier) {
-            var statusClass = supplier.statut === 'Actif' ? 'bg-success' : 'bg-danger';
-            
+document.addEventListener("DOMContentLoaded", function () {
+    const supplierModalElement = document.getElementById("supplierModal");
+    const supplierModal = new bootstrap.Modal(supplierModalElement);
+    const supplierForm = document.getElementById("supplierForm");
+    const suppliersTableBody = document.querySelector("#suppliersTable tbody");
+    const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
+    let suppliersDataTable;
+
+    function populateTable(suppliers) {
+        let suppliersHtml = "";
+        suppliers.forEach(function (supplier) {
             suppliersHtml += `
-                <tr>
+                <tr data-id="${supplier.id}">
                     <td>${supplier.id}</td>
-                    <td>${supplier.nom}</td>
+                    <td>${supplier.libelle}</td>
                     <td>${supplier.email}</td>
-                    <td>${supplier.telephone}</td>
-                    <td>${supplier.adresse}</td>
-                    <td>${supplier.produits}</td>
-                    <td><span class="badge ${statusClass}">${supplier.statut}</span></td>
+                    <td>${supplier.telephone || "N/A"}</td>
+                    <td>${supplier.adresse || "N/A"}</td>
+                    {# Add other columns like Produits Fournis, Statut if needed #}
                     <td>
                         <button class="btn btn-sm btn-outline-primary edit-supplier" data-id="${supplier.id}"><i class="fas fa-edit"></i></button>
                         <button class="btn btn-sm btn-outline-danger delete-supplier" data-id="${supplier.id}"><i class="fas fa-trash"></i></button>
@@ -115,64 +110,166 @@
                 </tr>
             `;
         });
-        
-        document.querySelector('#suppliersTable tbody').innerHTML = suppliersHtml;
-        
-        // Initialize DataTable
-        $(document).ready(function() {
-            $('#suppliersTable').DataTable({
-                "language": {
-                    "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/French.json"
+        suppliersTableBody.innerHTML = suppliersHtml;
+
+        attachActionListeners();
+
+        if (suppliersDataTable) {
+            suppliersDataTable.destroy();
+        }
+        suppliersDataTable = $("#suppliersTable").DataTable({
+            language: {
+                url: "//cdn.datatables.net/plug-ins/1.10.24/i18n/French.json",
+            },
+            order: [[0, "desc"]],
+        });
+    }
+
+    function loadSuppliers() {
+        fetch("/api/fournisseurs/")
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.fournisseurs) {
+                    populateTable(data.fournisseurs);
+                } else {
+                    console.error("Error loading suppliers:", data);
+                    suppliersTableBody.innerHTML = `<tr><td colspan="6">Erreur lors du chargement des fournisseurs.</td></tr>`;
                 }
+            })
+            .catch((error) => {
+                console.error("Fetch error:", error);
+                suppliersTableBody.innerHTML = `<tr><td colspan="6">Erreur réseau lors du chargement des fournisseurs.</td></tr>`;
             });
+    }
+
+    function attachActionListeners() {
+        document.querySelectorAll(".edit-supplier").forEach((button) => {
+            button.addEventListener("click", handleEditClick);
         });
-        
-        // Add Supplier button click
-        document.getElementById('addSupplierBtn').addEventListener('click', function() {
-            document.getElementById('supplierModalLabel').textContent = 'Ajouter Fournisseur';
-            document.getElementById('supplierForm').reset();
-            document.getElementById('supplierId').value = '';
-            var supplierModal = new bootstrap.Modal(document.getElementById('supplierModal'));
-            supplierModal.show();
+        document.querySelectorAll(".delete-supplier").forEach((button) => {
+            button.addEventListener("click", handleDeleteClick);
         });
-        
-        // Edit Supplier button click
-        document.querySelectorAll('.edit-supplier').forEach(function(button) {
-            button.addEventListener('click', function() {
-                var supplierId = this.getAttribute('data-id');
-                var supplier = suppliersData.find(s => s.id == supplierId);
-                
-                document.getElementById('supplierModalLabel').textContent = 'Modifier Fournisseur';
-                document.getElementById('supplierId').value = supplier.id;
-                document.getElementById('nom').value = supplier.nom;
-                document.getElementById('email').value = supplier.email;
-                document.getElementById('telephone').value = supplier.telephone;
-                document.getElementById('adresse').value = supplier.adresse;
-                document.getElementById('status').value = supplier.statut;
-                
-                var supplierModal = new bootstrap.Modal(document.getElementById('supplierModal'));
-                supplierModal.show();
-            });
-        });
-        
-        // Save Supplier button click
-        document.getElementById('saveSupplier').addEventListener('click', function() {
-            // Here would be the code to save the supplier data
-            alert('Fournisseur enregistré avec succès!');
-            var supplierModal = bootstrap.Modal.getInstance(document.getElementById('supplierModal'));
-            supplierModal.hide();
-        });
-        
-        // Delete Supplier button click
-        document.querySelectorAll('.delete-supplier').forEach(function(button) {
-            button.addEventListener('click', function() {
-                var supplierId = this.getAttribute('data-id');
-                if (confirm('Êtes-vous sûr de vouloir supprimer ce fournisseur?')) {
-                    // Here would be the code to delete the supplier
-                    alert('Fournisseur supprimé avec succès!');
-                }
-            });
-        });
+    }
+
+    function handleEditClick(event) {
+        const button = event.currentTarget;
+        const supplierId = button.getAttribute("data-id");
+
+        // Fetch supplier details or use table data as fallback
+        // Assuming fallback for now, implement API call if needed: fetch(`/api/fournisseurs/${supplierId}/`)
+        const row = button.closest("tr");
+        document.getElementById("supplierModalLabel").textContent = "Modifier Fournisseur";
+        document.getElementById("supplierId").value = supplierId;
+        document.getElementById("libelle").value = row.cells[1].textContent;
+        document.getElementById("email").value = row.cells[2].textContent;
+        document.getElementById("telephone").value = row.cells[3].textContent === "N/A" ? "" : row.cells[3].textContent;
+        document.getElementById("adresse").value = row.cells[4].textContent === "N/A" ? "" : row.cells[4].textContent;
+        // Set status if the field exists in the modal
+        // const statusCell = row.cells[6]; // Adjust index if columns change
+        // if (statusCell) document.getElementById("status").value = statusCell.textContent.trim();
+
+        supplierModal.show();
+    }
+
+    function handleDeleteClick(event) {
+        const button = event.currentTarget;
+        const supplierId = button.getAttribute("data-id");
+        if (confirm("Êtes-vous sûr de vouloir supprimer ce fournisseur?")) {
+            fetch(`/api/fournisseurs/delete/${supplierId}/`, {
+                method: "POST", // Or DELETE
+                headers: {
+                    "X-CSRFToken": csrfToken,
+                    "Content-Type": "application/json",
+                },
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.success) {
+                        alert("Fournisseur supprimé avec succès!");
+                        loadSuppliers(); // Refresh table
+                    } else {
+                        alert("Erreur lors de la suppression: " + (data.errors || "Erreur inconnue"));
+                    }
+                })
+                .catch((error) => {
+                    console.error("Delete error:", error);
+                    alert("Erreur réseau lors de la suppression.");
+                });
+        }
+    }
+
+    // Add Supplier button click
+    document.getElementById("addSupplierBtn").addEventListener("click", function () {
+        document.getElementById("supplierModalLabel").textContent = "Ajouter Fournisseur";
+        supplierForm.reset();
+        document.getElementById("supplierId").value = ""; // Clear ID for add mode
+        supplierModal.show();
     });
+
+    // Save Supplier button click (Handles both Add and Update)
+    document.getElementById("saveSupplier").addEventListener("click", function () {
+        const supplierId = document.getElementById("supplierId").value;
+        const isUpdate = supplierId !== "";
+        const url = isUpdate ? `/api/fournisseurs/update/${supplierId}/` : "/api/fournisseurs/add/";
+        const method = isUpdate ? "PUT" : "POST"; // Use PUT for update
+
+        const formData = {
+            libelle: document.getElementById("libelle").value,
+            email: document.getElementById("email").value,
+            telephone: document.getElementById("telephone").value,
+            adresse: document.getElementById("adresse").value,
+            // status: document.getElementById("status").value // Include if status field exists
+        };
+
+        // Basic validation
+        if (!formData.libelle || !formData.email) {
+            alert("Veuillez remplir les champs Nom (Libellé) et Email.");
+            return;
+        }
+
+        fetch(url, {
+            method: method,
+            headers: {
+                "X-CSRFToken": csrfToken,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(formData),
+        })
+            .then((response) => {
+                if (!response.ok) {
+                    return response.json().then((err) => {
+                        throw err;
+                    });
+                }
+                return response.json();
+            })
+            .then((data) => {
+                if (data.success) {
+                    alert("Fournisseur enregistré avec succès!");
+                    supplierModal.hide();
+                    loadSuppliers(); // Refresh table
+                } else {
+                    let errorMsg = "Erreur lors de l\enregistrement.";
+                    if (data.errors) {
+                        errorMsg += "\n" + JSON.stringify(data.errors);
+                    }
+                    alert(errorMsg);
+                }
+            })
+            .catch((error) => {
+                console.error("Save error:", error);
+                 let errorMsg = "Erreur réseau ou serveur.";
+                 if (error && typeof error === "object") {
+                    errorMsg += "\n" + JSON.stringify(error);
+                }
+                alert(errorMsg);
+            });
+    });
+
+    // Initial Load
+    loadSuppliers();
+});
+
 </script>
 {% endblock %}
+
