@@ -12,7 +12,7 @@ urlpatterns = [
     path('', include('admin_panel.urls')),
 
     re_path(r'^admindash/$', TemplateView.as_view(template_name='frontoffice/master_page.html')),
-    re_path(r'^admindash/statistiques$', TemplateView.as_view(template_name='frontoffice/page/statistiques.html')),
+    path("admindash/statistiques/", TemplateView.as_view(template_name="frontoffice/page/statistiques.html"), name="admin_statistiques"),
     re_path(r'^admindash/produits$', TemplateView.as_view(template_name='frontoffice/page/produit.html'), name='admin_produits'),
     path("admindash/clients/", TemplateView.as_view(template_name="frontoffice/page/client.html"), name="admin_clients"),
     path("admindash/fournisseurs/", TemplateView.as_view(template_name="frontoffice/page/fournisseur.html"), name="admin_fournisseurs"),
