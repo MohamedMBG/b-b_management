@@ -24,7 +24,7 @@ SECRET_KEY = 'bvie-ns68me1k$nh+p-znm3=fil$y*d*##wkblw79&f2n&&8ye'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["8000-ito4n751ifjul6z6wcz0w-33ac791b.manusvm.computer"]
+ALLOWED_HOSTS = ["8000-ito4n751ifjul6z6wcz0w-33ac791b.manusvm.computer", "127.0.0.1"]
 
 
 # Application definition
