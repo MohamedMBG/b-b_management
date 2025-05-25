@@ -58,3 +58,11 @@ def produit_all(request):
 def counts_all(request):
     produits = Produit.objects.all().count()
     return render(request, 'frontoffice/master_page.html', {'produits': produits})
+
+
+
+def admin_logout_view(request):
+    logout(request)
+    # Redirect to the login page (assuming it's the root URL '/')
+    return redirect('/')
+

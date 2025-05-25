@@ -14,17 +14,18 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, re_path, include # Added include
+from django.shortcuts import redirect # Added redirect
 
 from admin_panel import views
-from django.urls import path, re_path
-
-from admin_panel.views import LoginView
+from admin_panel.views import LoginView, admin_logout_view # Added admin_logout_view
 
 urlpatterns = [
-    re_path(r'^$', LoginView.as_view()),
+    re_path(r'^$', LoginView.as_view(), name='admin_login'), # Added name for login
+    path('logout/', admin_logout_view, name='admin_logout'), # Added admin logout path
     #path('admindash/produit/add/', views.post_new, name='addProduit'),
     # path('post/<int:pk>/edit/', views.produit_edit, name='produit_edit'),
      #path('produits/', views.produit_all, name='produits'),
     #path('admindash/',views.counts_all)
 ]
+
