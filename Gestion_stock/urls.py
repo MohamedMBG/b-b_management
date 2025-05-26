@@ -7,7 +7,7 @@ from client_portal import views as client_views
 from API import views
 
 urlpatterns = [
-    # path('admin/', admin.site.urls),
+    path('admin/', admin.site.urls),
     path('API/', include('API.urls')),
     path('', include('admin_panel.urls')),
 

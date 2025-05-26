@@ -1,22 +1,21 @@
-# admin_panel/views.py
-
+from django.forms import model_to_dict
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout # Renamed login to auth_login
-from django.http import JsonResponse, HttpResponseRedirect, HttpResponseBadRequest, HttpResponseNotAllowed
+from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
+from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseNotAllowed, HttpResponseRedirect
 from django.views.generic import TemplateView
-from django.conf import settings
 from django.contrib import messages
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
-from django.views.decorators.csrf import csrf_exempt # Use carefully, consider CSRF protection for production
-from django.core.paginator import Paginator
 import json
 
-from .forms import ProduitForm, FournisseurForm, ClientForm # Assuming ClientForm exists or will be created
-from API.models import Produit, Fournisseur, Client # Assuming Client model is the correct one
+from Gestion_stock import settings
+from .forms import ProduitForm, FournisseurForm, ClientForm
+from API.models import Produit, Fournisseur, Client
 
-# --- Authentication Views --- (Keep existing login/logout)
+# --- Vue pour la connexion ---
 
-def login(request): # Keep original simple login render
+def login(request):
+    """Affiche la page de connexion."""
     return render(request, "login.html")
 
 class LoginView(TemplateView):
@@ -41,109 +40,70 @@ class LoginView(TemplateView):
             return render(request, self.template_name)
 
 class LogoutView(TemplateView):
+    """Déconnecte un utilisateur."""
     template_name = 'login.html'
 
     def get(self, request, **kwargs):
-        auth_logout(request) # Use the renamed auth_logout
+        auth_logout(request)
         return render(request, self.template_name)
 
-def admin_logout_view(request):
-    auth_logout(request)
-    return redirect('/')
+# --- Utilitaire générique pour les vues CRUD ---
+def handle_form_submission(request, form_class, instance=None, success_status=200):
+    """
+    Gère la validation et la sauvegarde d'un formulaire pour les opérations CRUD.
+    :param request: La requête HTTP.
+    :param form_class: La classe du formulaire à valider.
+    :param instance: (Optionnel) Objet existant pour une modification.
+    :param success_status: Statut HTTP en cas de succès.
+    :return: JsonResponse.
+    """
+    try:
+        data = json.loads(request.body)
+        form = form_class(data, instance=instance)
+        if form.is_valid():
+            obj = form.save()
+            return JsonResponse({'success': True, 'data': model_to_dict(obj)}, status=success_status)
+        return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+    except json.JSONDecodeError:
+        return HttpResponseBadRequest("JSON invalide.")
+    except Exception as e:
+        return JsonResponse({'success': False, 'errors': str(e)}, status=500)
 
-# --- Product Views --- (New/Modified)
-
+# --- Vues pour Produits ---
 @require_GET
 def list_produits(request):
-    """Returns a JSON list of products for AJAX requests."""
-    produits_list = Produit.objects.select_related('fournisseur').all()
-    # Implement filtering/searching based on request.GET parameters if needed
-    # Example: category = request.GET.get('category')
-    # if category:
-    #     produits_list = produits_list.filter(category=category) # Assuming category field exists
-
-    data = [{
-        'id': p.id,
-        'reference': p.reference,
-        'designation': p.designation,
-        'prixU': str(p.prixU), # Convert Decimal to string for JSON
-        'quantite': p.quantite,
-        'alert_quantite': p.alert_quantite,
-        'fournisseur_id': p.fournisseur.id,
-        'fournisseur_libelle': p.fournisseur.libelle,
-        'is_below_alert': p.is_below_alert_level()
-        # Add category if it exists on the model
-    } for p in produits_list]
+    """Retourne la liste des produits."""
+    produits = Produit.objects.select_related('fournisseur').all()
+    data = [
+        {
+            'id': produit.id,
+            'reference': produit.reference,
+            'designation': produit.designation,
+            'prixU': str(produit.prixU),
+            'quantite': produit.quantite,
+            'alert_quantite': produit.alert_quantite,
+            'fournisseur': produit.fournisseur.libelle,
+        }
+        for produit in produits
+    ]
     return JsonResponse({'produits': data})
 
-@csrf_exempt # Consider proper CSRF handling for production
+@csrf_exempt
 @require_POST
 def add_produit(request):
-    """Adds a new product via AJAX POST request."""
-    try:
-        data = json.loads(request.body)
-        form = ProduitForm(data)
-        if form.is_valid():
-            produit = form.save()
-            # Return the created product data for frontend update
-            return JsonResponse({
-                'success': True,
-                'produit': {
-                    'id': produit.id,
-                    'reference': produit.reference,
-                    'designation': produit.designation,
-                    'prixU': str(produit.prixU),
-                    'quantite': produit.quantite,
-                    'alert_quantite': produit.alert_quantite,
-                    'fournisseur_id': produit.fournisseur.id,
-                    'fournisseur_libelle': produit.fournisseur.libelle,
-                    'is_below_alert': produit.is_below_alert_level()
-                }
-            }, status=201)
-        else:
-            return JsonResponse({'success': False, 'errors': form.errors}, status=400)
-    except json.JSONDecodeError:
-        return HttpResponseBadRequest('Invalid JSON')
-    except Exception as e:
-        return JsonResponse({'success': False, 'errors': str(e)}, status=500)
+    """Ajoute un produit."""
+    return handle_form_submission(request, ProduitForm, success_status=201)
 
-@csrf_exempt # Consider proper CSRF handling for production
+@csrf_exempt
 def update_produit(request, pk):
-    """Updates an existing product via AJAX PUT/POST request."""
-    if request.method not in ['POST', 'PUT']:
-        return HttpResponseNotAllowed(['POST', 'PUT'])
-
+    """Met à jour un produit."""
     produit = get_object_or_404(Produit, pk=pk)
-    try:
-        data = json.loads(request.body)
-        form = ProduitForm(data, instance=produit)
-        if form.is_valid():
-            produit = form.save()
-            return JsonResponse({
-                'success': True,
-                'produit': {
-                    'id': produit.id,
-                    'reference': produit.reference,
-                    'designation': produit.designation,
-                    'prixU': str(produit.prixU),
-                    'quantite': produit.quantite,
-                    'alert_quantite': produit.alert_quantite,
-                    'fournisseur_id': produit.fournisseur.id,
-                    'fournisseur_libelle': produit.fournisseur.libelle,
-                    'is_below_alert': produit.is_below_alert_level()
-                }
-            })
-        else:
-            return JsonResponse({'success': False, 'errors': form.errors}, status=400)
-    except json.JSONDecodeError:
-        return HttpResponseBadRequest('Invalid JSON')
-    except Exception as e:
-        return JsonResponse({'success': False, 'errors': str(e)}, status=500)
+    return handle_form_submission(request, ProduitForm, instance=produit)
 
-@csrf_exempt # Consider proper CSRF handling for production
-@require_POST # Or DELETE if preferred, adjust frontend accordingly
+@csrf_exempt
+@require_POST
 def delete_produit(request, pk):
-    """Deletes a product via AJAX POST/DELETE request."""
+    """Supprime un produit."""
     produit = get_object_or_404(Produit, pk=pk)
     try:
         produit.delete()
@@ -151,51 +111,39 @@ def delete_produit(request, pk):
     except Exception as e:
         return JsonResponse({'success': False, 'errors': str(e)}, status=500)
 
-# --- Fournisseur Views --- (Placeholder - Implement similarly to Produit)
-
+# --- Vues pour Fournisseurs ---
 @require_GET
 def list_fournisseurs(request):
+    """Retourne la liste des fournisseurs."""
     fournisseurs = Fournisseur.objects.all()
-    data = [{'id': f.id, 'libelle': f.libelle, 'email': f.email, 'telephone': f.telephone, 'adresse': f.adresse} for f in fournisseurs]
+    data = [
+        {
+            'id': f.id,
+            'libelle': f.libelle,
+            'email': f.email,
+            'telephone': f.telephone,
+            'adresse': f.adresse,
+        }
+        for f in fournisseurs
+    ]
     return JsonResponse({'fournisseurs': data})
 
 @csrf_exempt
 @require_POST
 def add_fournisseur(request):
-    try:
-        data = json.loads(request.body)
-        form = FournisseurForm(data)
-        if form.is_valid():
-            fournisseur = form.save()
-            return JsonResponse({'success': True, 'fournisseur': {'id': fournisseur.id, 'libelle': fournisseur.libelle, 'email': fournisseur.email, 'telephone': fournisseur.telephone, 'adresse': fournisseur.adresse}}, status=201)
-        else:
-            return JsonResponse({'success': False, 'errors': form.errors}, status=400)
-    except json.JSONDecodeError:
-        return HttpResponseBadRequest('Invalid JSON')
-    except Exception as e:
-        return JsonResponse({'success': False, 'errors': str(e)}, status=500)
+    """Ajoute un fournisseur."""
+    return handle_form_submission(request, FournisseurForm, success_status=201)
 
 @csrf_exempt
 def update_fournisseur(request, pk):
-    if request.method not in ['POST', 'PUT']:
-        return HttpResponseNotAllowed(['POST', 'PUT'])
+    """Met à jour un fournisseur."""
     fournisseur = get_object_or_404(Fournisseur, pk=pk)
-    try:
-        data = json.loads(request.body)
-        form = FournisseurForm(data, instance=fournisseur)
-        if form.is_valid():
-            fournisseur = form.save()
-            return JsonResponse({'success': True, 'fournisseur': {'id': fournisseur.id, 'libelle': fournisseur.libelle, 'email': fournisseur.email, 'telephone': fournisseur.telephone, 'adresse': fournisseur.adresse}})
-        else:
-            return JsonResponse({'success': False, 'errors': form.errors}, status=400)
-    except json.JSONDecodeError:
-        return HttpResponseBadRequest('Invalid JSON')
-    except Exception as e:
-        return JsonResponse({'success': False, 'errors': str(e)}, status=500)
+    return handle_form_submission(request, FournisseurForm, instance=fournisseur)
 
 @csrf_exempt
 @require_POST
 def delete_fournisseur(request, pk):
+    """Supprime un fournisseur."""
     fournisseur = get_object_or_404(Fournisseur, pk=pk)
     try:
         fournisseur.delete()
@@ -203,93 +151,54 @@ def delete_fournisseur(request, pk):
     except Exception as e:
         return JsonResponse({'success': False, 'errors': str(e)}, status=500)
 
-# --- Client Views --- (Placeholder - Implement similarly to Produit/Fournisseur)
-# Note: Uses the custom 'Client' model from API.models
-
+# --- Vues pour Clients ---
 @require_GET
 def list_clients(request):
-    # Use the custom Client model
-    clients = Client.objects.filter(is_staff=False, is_superuser=False) # Exclude admin/staff users if needed
-    data = [{'id': c.id, 'nom': c.nom, 'prenom': c.prenom, 'email': c.email, 'telephone': c.telephone, 'adresse': c.adresse} for c in clients]
+    """Retourne la liste des clients."""
+    clients = Client.objects.filter(is_staff=False, is_superuser=False)
+    data = [
+        {
+            'id': client.id,
+            'nom': client.nom,
+            'prenom': client.prenom,
+            'email': client.email,
+            'telephone': client.telephone,
+            'adresse': client.adresse,
+        }
+        for client in clients
+    ]
     return JsonResponse({'clients': data})
 
 @csrf_exempt
 @require_POST
 def add_client(request):
-    try:
-        data = json.loads(request.body)
-        # Use a specific form for client creation if needed (e.g., ClientCreationForm)
-        form = ClientForm(data)
-        if form.is_valid():
-            # Manually handle password setting if ClientForm doesn't
-            client = form.save(commit=False)
-            password = data.get('password') # Ensure password is sent from frontend
-            if password:
-                client.set_password(password)
-            client.save()
-            # Don't return password hash
-            return JsonResponse({'success': True, 'client': {'id': client.id, 'nom': client.nom, 'prenom': client.prenom, 'email': client.email, 'telephone': client.telephone, 'adresse': client.adresse}}, status=201)
-        else:
-            return JsonResponse({'success': False, 'errors': form.errors}, status=400)
-    except json.JSONDecodeError:
-        return HttpResponseBadRequest('Invalid JSON')
-    except Exception as e:
-        return JsonResponse({'success': False, 'errors': str(e)}, status=500)
+    """Ajoute un client."""
+    return handle_form_submission(request, ClientForm, success_status=201)
 
 @csrf_exempt
 def update_client(request, pk):
-    if request.method not in ['POST', 'PUT']:
-        return HttpResponseNotAllowed(['POST', 'PUT'])
+    """Met à jour un client."""
     client = get_object_or_404(Client, pk=pk)
-    try:
-        data = json.loads(request.body)
-        # Exclude password from direct update via form unless specifically handled
-        form = ClientForm(data, instance=client)
-        if form.is_valid():
-            client = form.save()
-            # Handle password change separately if needed
-            # password = data.get('password')
-            # if password:
-            #     client.set_password(password)
-            #     client.save()
-            return JsonResponse({'success': True, 'client': {'id': client.id, 'nom': client.nom, 'prenom': client.prenom, 'email': client.email, 'telephone': client.telephone, 'adresse': client.adresse}})
-        else:
-            return JsonResponse({'success': False, 'errors': form.errors}, status=400)
-    except json.JSONDecodeError:
-        return HttpResponseBadRequest('Invalid JSON')
-    except Exception as e:
-        return JsonResponse({'success': False, 'errors': str(e)}, status=500)
+    return handle_form_submission(request, ClientForm, instance=client)
 
 @csrf_exempt
 @require_POST
 def delete_client(request, pk):
+    """Supprime un client."""
     client = get_object_or_404(Client, pk=pk)
     try:
         client.delete()
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'success': False, 'errors': str(e)}, status=500)
+# admin_panel/views.py
 
-# --- Dashboard/Page Views --- (Keep existing TemplateViews for initial page load)
-# The actual data loading will happen via AJAX calls to the list_* views above.
+from django.shortcuts import redirect
+from django.contrib.auth import logout as auth_logout
 
-# Example (if needed, but URLs already point to TemplateView):
-# def admin_dashboard(request):
-#     return render(request, 'frontoffice/master_page.html')
-
-# def admin_produits_page(request):
-#     return render(request, 'frontoffice/page/produit.html')
-
-# def admin_clients_page(request):
-#     return render(request, 'frontoffice/page/client.html')
-
-# def admin_fournisseurs_page(request):
-#     return render(request, 'frontoffice/page/fournisseur.html')
-
-# def admin_achats_page(request):
-#     return render(request, 'frontoffice/page/achat.html')
-
-# def admin_statistiques_page(request):
-#     return render(request, 'frontoffice/page/statistiques.html')
-
-
+def admin_logout_view(request):
+    """
+    Déconnecte l'administrateur et redirige vers la page principale.
+    """
+    auth_logout(request)
+    return redirect('/')
